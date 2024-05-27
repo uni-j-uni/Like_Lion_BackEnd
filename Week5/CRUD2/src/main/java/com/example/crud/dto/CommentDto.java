@@ -9,17 +9,15 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class CommentDto {
-    private Long id;
-    private PostDto post;
-    private MemberDto member;
     private String content;
-    private LocalDate commentDate;
+    private Long memberId;
+    private Long postId;
 
     public static CommentDto from(Comment comment) {
         CommentDto commentDto = new CommentDto();
-        commentDto.setId(comment.getId());
+        commentDto.setPostId(comment.getPost().getId());
         commentDto.setContent(comment.getContent());
-        commentDto.setCommentDate(comment.getCommentDate());
+        commentDto.setMemberId(comment.getMember().getId());
         return commentDto;
     }
 }

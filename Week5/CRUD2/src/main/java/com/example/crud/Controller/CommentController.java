@@ -1,6 +1,9 @@
 package com.example.crud.Controller;
 
+import com.example.crud.Repository.MemberRepository;
 import com.example.crud.Service.CommentService;
+import com.example.crud.Service.MemberService;
+import com.example.crud.Service.PostService;
 import com.example.crud.domain.Comment;
 import com.example.crud.dto.CommentDto;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,31 +18,29 @@ import java.util.Optional;
 @RequestMapping("/api/comments")
 public class CommentController {
     private final CommentService commentService;
+    private final MemberService memberService;
+    private final PostService postService;
+
 
     @Autowired
-    public CommentController(CommentService commentService) { this.commentService = commentService; }
+    public CommentController(CommentService commentService, MemberService memberService, PostService postService) {
+        this.commentService = commentService;
+        this.memberService = memberService;
+        this.postService = postService;
+    }
 
+    // Create
     @PostMapping
     public ResponseEntity<CommentDto> registerComment(@RequestBody CommentDto commentDto) {
         Comment comment = new Comment();
-        comment.setMember(comment.getMember());
-        comment.setPost(comment.getPost());
+        comment.setMember(memberService.getMemberById(commentDto.getMemberId()).orElse(null));
+        comment.setPost(postService.getPostById(commentDto.getPostId()).orElse(null));
         comment.setContent(commentDto.getContent());
         Comment registeredComment = commentService.registerComment(comment);
         return ResponseEntity.ok(CommentDto.from(registeredComment));
     }
 
-    @GetMapping
-    public ResponseEntity<List<CommentDto>> getAllComments() {
-        List<Comment> comments = commentService.getAllComments();
-        List<CommentDto> commentDtos = new ArrayList<>();
-        for (Comment comment : comments) {
-            CommentDto dto = CommentDto.from(comment);
-            commentDtos.add(dto);
-        }
-        return ResponseEntity.ok(commentDtos);
-    }
-
+    // Read
     @GetMapping("/{id}")
     public ResponseEntity<CommentDto> getCommentById(@PathVariable(name="id") Long id) {
         Optional<Comment> commentOptional = commentService.getCommentById(id);
@@ -50,19 +51,32 @@ public class CommentController {
         else return ResponseEntity.notFound().build();
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletecomment(@PathVariable(name="id")Long id) {
-        commentService.deleteComment(id);
-        return ResponseEntity.noContent().build();
+    @GetMapping("/post/{id}")
+    public ResponseEntity<List<CommentDto>> getCommentsByPostId(@PathVariable(name = "id") Long id) {
+        List<Comment> comments = commentService.getCommentsByPostId(id);
+        List<CommentDto> commentDtos = new ArrayList<>();
+        for (Comment comment : comments) {
+            CommentDto dto = CommentDto.from(comment);
+            commentDtos.add(dto);
+        }
+        return ResponseEntity.ok(commentDtos);
     }
 
+    // Update
     @PatchMapping("/{id}")
-    public ResponseEntity<CommentDto> UpdateComment(@PathVariable(name="id") Long id, @RequestBody CommentDto commentDto) {
+    public ResponseEntity<CommentDto> UpdateCommentById(@PathVariable(name="id") Long id, @RequestBody CommentDto commentDto) {
         try {
             Comment updatedComment = commentService.updateComment(id, commentDto);
             return ResponseEntity.ok(CommentDto.from(updatedComment));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    // Delete
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteComment(@PathVariable Long id) {
+        commentService.deleteComment(id);
+        return ResponseEntity.noContent().build();
     }
 }
